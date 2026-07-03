@@ -202,6 +202,34 @@ cd smart_bakery_ml</code></pre>
     </div>
 
     <div class="card">
+      <h2>Visual Walkthrough & Features</h2>
+      
+      <h3>Dashboard Overview</h3>
+      <p>Displays overall transaction counters, average items sold per day, and historical trend lines.</p>
+      <p><img src="static/dashboard.png" alt="Dashboard Overview" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+      
+      <h3>POS Terminal (Sales Entry)</h3>
+      <p>Enter items sold in real-time. Submitting a sale appends it directly to the active CSV file and automatically retrains the machine learning models.</p>
+      <p><img src="static/pos.png" alt="POS Terminal" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+      
+      <h3>Demand Predictor</h3>
+      <p>Interactive forecasts showing predicted daily sales for the next 7, 14, or 30 days. Includes a date picker to predict demand for any specific date.</p>
+      <p><img src="static/predictions.png" alt="Demand Predictor" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+      
+      <h3>Customer Insights (Segmentation & Combos)</h3>
+      <p>Visual representation of customer groups using K-Means Clustering and frequently purchased combos mined via Apriori-style association analysis.</p>
+      <p><img src="static/insights.png" alt="Customer Insights" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+      
+      <h3>Inventory & Wastage</h3>
+      <p>Evaluates current stock against expected end-of-day demand and alerts you of potential wastage, recommending discount percentages to clear inventory.</p>
+      <p><img src="static/inventory.png" alt="Inventory & Wastage" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+      
+      <h3>Feedback & Sentiment</h3>
+      <p>Analyze reviews left by customers. System flags products with high negative feedback and displays extracted issue words (like stale, dry, or burnt).</p>
+      <p><img src="static/feedback.png" alt="Feedback & Sentiment" style="max-width:100%; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px;"></p>
+    </div>
+
+    <div class="card">
       <h2>Codebase Architecture</h2>
       <div class="table-wrap">
         <table>
