@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Bakery — ML Dashboard</title>
+  <meta name="description" content="AI-powered Smart Bakery Management System with Linear Regression and Random Forest sales forecasting." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ============================== SIDEBAR ============================== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div>
+      <div class="brand-title">Smart Bakery</div>
+      <div class="brand-sub">ML Dashboard</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item active" data-tab="dashboard" href="#">
+      Dashboard
+    </a>
+    <a class="nav-item" data-tab="pos" href="#">
+      POS (Sales Entry)
+    </a>
+    <a class="nav-item" data-tab="predictions" href="#">
+      Predictions
+    </a>
+    <a class="nav-item" data-tab="models" href="#">
+      Model Comparison
+    </a>
+    <a class="nav-item" data-tab="insights" href="#">
+      Customer Insights
+    </a>
+    <a class="nav-item" data-tab="products" href="#">
+      Products
+    </a>
+    <a class="nav-item" data-tab="inventory" href="#">
+      Inventory / Wastage
+    </a>
+    <a class="nav-item" data-tab="feedback" href="#">
+      Feedback & Sentiment
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Loading...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ============================== MAIN ============================== -->
+<main class="main-content">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div>
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      <p class="page-date" id="pageDate">—</p>
+    </div>
+    <div class="topbar-right">
+      <!-- Upload area -->
+      <div class="upload-area">
+        <label for="csvFileInput" class="file-input-btn">Upload CSV</label>
+        <input type="file" id="csvFileInput" accept=".csv" onchange="uploadCSV(this)" />
+        <span class="dataset-info">Dataset: <span id="activeDataset" class="dataset-name">Default (Bakery.csv)</span></span>
+      </div>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadAll()">Refresh</button>
+    </div>
+  </header>
+
+  <!-- ─────────────────────── TAB: DASHBOARD ─────────────────────── -->
+  <section class="tab-content active" id="tab-dashboard">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-value" id="kpiTransactions">—</div>
+        <div class="kpi-label">Total Transactions</div>
+      </div>
+      <div class="kpi-card kpi-purple">
+        <div class="kpi-value" id="kpiItems">—</div>
+        <div class="kpi-label">Total Items Sold</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <div class="kpi-value" id="kpiAvgDay">—</div>
+        <div class="kpi-label">Avg Items / Day</div>
+      </div>
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-value" id="kpiPredRF">—</div>
+        <div class="kpi-label">Predicted Today (RF)</div>
+      </div>
+    </div>
+
+    <!-- Weekend vs Weekday -->
+    <div class="cards-row">
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Monthly Sales Trend</h2>
+          <span class="badge badge-blue">Items sold / month</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Sales by Day of Week</h2>
+          <span class="badge badge-purple">Average items</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartWeekly"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Date range & daypart -->
+    <div class="cards-row">
+      <div class="card card-third">
+        <div class="card-header"><h2>Time-of-Day Breakdown</h2></div>
+        <div class="chart-wrap chart-sm"><canvas id="chartDaypart"></canvas></div>
+      </div>
+      <div class="card card-two-thirds">
+        <div class="card-header">
+          <h2>Recent 30-Day History</h2>
+          <span class="badge badge-green">Daily items sold</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartRecent"></canvas></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────── TAB: POS (SALES ENTRY) ───────────────── -->
+  <section class="tab-content" id="tab-pos">
+    <div class="cards-row">
+      <div class="card card-two-thirds">
+        <div class="card-header">
+          <h2>POS Terminal</h2>
+          <span class="badge badge-blue">New Sale Entry</span>
+        </div>
+        
+        <div class="inventory-grid" style="margin-bottom: 24px;">
+          <div class="inventory-item">
+            <label>Coffee</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Coffee', -1)">-</button>
+              <input type="number" id="pos_Coffee" value="0" min="0" style="width: 70px; text-align: center;" readonly />
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Coffee', 1)">+</button>
+            </div>
+          </div>
+          <div class="inventory-item">
+            <label>Bread</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Bread', -1)">-</button>
+              <input type="number" id="pos_Bread" value="0" min="0" style="width: 70px; text-align: center;" readonly />
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Bread', 1)">+</button>
+            </div>
+          </div>
+          <div class="inventory-item">
+            <label>Tea</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Tea', -1)">-</button>
+              <input type="number" id="pos_Tea" value="0" min="0" style="width: 70px; text-align: center;" readonly />
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Tea', 1)">+</button>
+            </div>
+          </div>
+          <div class="inventory-item">
+            <label>Cake</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Cake', -1)">-</button>
+              <input type="number" id="pos_Cake" value="0" min="0" style="width: 70px; text-align: center;" readonly />
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Cake', 1)">+</button>
+            </div>
+          </div>
+          <div class="inventory-item">
+            <label>Pastry</label>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Pastry', -1)">-</button>
+              <input type="number" id="pos_Pastry" value="0" min="0" style="width: 70px; text-align: center;" readonly />
+              <button class="btn-refresh" style="padding: 4px 10px;" onclick="changePOSQty('Pastry', 1)">+</button>
+            </div>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn-refresh" onclick="clearPOS()">Clear</button>
+          <button class="btn-primary" onclick="submitPOSSale()">Record Sale & Retrain Models</button>
+        </div>
+      </div>
+      
+      <div class="card card-third">
+        <div class="card-header">
+          <h2>Current Order</h2>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px;" id="posSummaryList">
+          <p style="color: var(--text-muted); font-size: 0.88rem;">No items added to current sale.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── TAB: PREDICTIONS ────────────────────── -->
+  <section class="tab-content" id="tab-predictions">
+
+    <div class="pred-controls card">
+      <div class="pred-controls-inner">
+        <div class="form-group">
+          <label for="predDays">Forecast Horizon</label>
+          <select id="predDays">
+            <option value="7">7 days</option>
+            <option value="14" selected>14 days</option>
+            <option value="30">30 days</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="predTarget">Target</label>
+          <select id="predTarget">
+            <option value="total_items" selected>Total Items Sold</option>
+            <option value="total_transactions">Transactions</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="loadPredictions()">Predict Horizon</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Sales Forecast</h2>
+        <div class="legend-row">
+          <span class="legend-dot" style="background:#3b82f6"></span> Linear Regression
+          <span class="legend-dot" style="background:#10b981; margin-left:12px"></span> Random Forest
+        </div>
+      </div>
+      <div class="chart-wrap chart-lg"><canvas id="chartPred"></canvas></div>
+    </div>
+
+    <div class="cards-row" id="predSummaryCards"></div>
+
+    <!-- Single Day Prediction Tool -->
+    <div class="card pred-single-day">
+      <div class="card-header">
+        <h2>Predict Specific Date</h2>
+        <span class="badge badge-blue">Interactive Model</span>
+      </div>
+      <div class="pred-form">
+        <div class="form-group">
+          <label for="singlePredDate">Select Date</label>
+          <input type="date" id="singlePredDate" />
+        </div>
+        <div class="form-group">
+          <label for="singlePredTarget">Target</label>
+          <select id="singlePredTarget">
+            <option value="total_items" selected>Total Items Sold</option>
+            <option value="total_transactions">Transactions</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="predictSingleDate()">Predict Date</button>
+      </div>
+      <div class="pred-single-results" id="singlePredResults" style="display:none;">
+        <div class="result-card">
+          <div class="result-card-title">Linear Regression</div>
+          <div class="result-card-val" id="singleResultLR">—</div>
+          <div class="result-card-meta" id="singleMetaLR">Calculated from day, month, day of week</div>
+        </div>
+        <div class="result-card">
+          <div class="result-card-title">Random Forest</div>
+          <div class="result-card-val" id="singleResultRF" style="color: var(--accent2);">—</div>
+          <div class="result-card-meta" id="singleMetaRF">Calculated from full calendar features</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────── TAB: MODEL COMPARISON ──────────────── -->
+  <section class="tab-content" id="tab-models">
+
+    <div class="cards-row">
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Model Accuracy (R2)</h2>
+          <span class="badge badge-amber">Higher is better</span>
+        </div>
+        <div class="chart-wrap chart-sm"><canvas id="chartR2"></canvas></div>
+      </div>
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Mean Absolute Error</h2>
+          <span class="badge badge-blue">Lower is better</span>
+        </div>
+        <div class="chart-wrap chart-sm"><canvas id="chartMAE"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Random Forest — Feature Importance</h2>
+        <span class="badge badge-purple">total_items target</span>
+      </div>
+      <div class="chart-wrap chart-sm"><canvas id="chartFeat"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Metrics Table</h2></div>
+      <div class="table-wrap">
+        <table class="metrics-table" id="metricsTable">
+          <thead>
+            <tr>
+              <th>Target</th><th>Model</th>
+              <th>MAE</th><th>RMSE</th><th>R2</th><th>Accuracy</th>
+            </tr>
+          </thead>
+          <tbody id="metricsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────── TAB: CUSTOMER INSIGHTS ───────────────── -->
+  <section class="tab-content" id="tab-insights">
+    <div class="cards-row">
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Customer Segmentation (K-Means)</h2>
+          <span class="badge badge-blue">Behavioral Clusters</span>
+        </div>
+        <div class="chart-wrap chart-sm" style="height: 180px;"><canvas id="chartSegments"></canvas></div>
+        
+        <div style="margin-top: 24px;" id="segmentDetailsList">
+          <!-- Dynamic segments details -->
+        </div>
+      </div>
+      
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Frequently Bought Together (Apriori Combos)</h2>
+          <span class="badge badge-purple">Association Rules</span>
+        </div>
+        <div class="table-wrap">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Item Combo</th>
+                <th>Support</th>
+                <th>Confidence</th>
+                <th>Frequency</th>
+              </tr>
+            </thead>
+            <tbody id="combosTableBody">
+              <!-- Dynamic combos -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────── TAB: PRODUCTS ───────────────────────── -->
+  <section class="tab-content" id="tab-products">
+
+    <div class="cards-row">
+      <div class="card card-half">
+        <div class="card-header">
+          <h2>Top 10 Products</h2>
+          <span class="badge badge-blue">By total items sold</span>
+        </div>
+        <div class="chart-wrap chart-lg"><canvas id="chartTopItems"></canvas></div>
+      </div>
+      <div class="card card-half">
+        <div class="card-header"><h2>Product Share</h2></div>
+        <div class="chart-wrap chart-sm"><canvas id="chartTopPie"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Product Rankings</h2></div>
+      <div id="productRankings" class="product-list"></div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────── TAB: INVENTORY ──────────────────────── -->
+  <section class="tab-content" id="tab-inventory">
+
+    <div class="card">
+      <div class="card-header">
+        <h2>Current Stock Levels</h2>
+        <button class="btn-primary" onclick="saveInventory()">Save</button>
+      </div>
+      <div id="inventoryInputs" class="inventory-grid"></div>
+    </div>
+
+    <!-- Wastage Prediction and Discounts section -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Today's Wastage Risk & Discount Suggestions</h2>
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px;">
+          <label for="wastageHour" style="margin-bottom: 0;">Evaluation Time:</label>
+          <select id="wastageHour" onchange="loadWastageReport()" style="padding: 4px 8px;">
+            <option value="9">09:00 AM (Morning)</option>
+            <option value="12">12:00 PM (Noon)</option>
+            <option value="15" selected>03:00 PM (Afternoon)</option>
+            <option value="18">06:00 PM (Evening)</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="metrics-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Stock</th>
+              <th>Expected Demand</th>
+              <th>Sold So Far</th>
+              <th>Predicted Wastage</th>
+              <th>Waste %</th>
+              <th>Action Recommended</th>
+            </tr>
+          </thead>
+          <tbody id="wastageTableBody">
+            <!-- Dynamic wastage list -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>7-Day Demand Forecast and Alerts</h2>
+        <span class="badge badge-purple">Powered by Random Forest</span>
+      </div>
+      <div id="inventoryAlerts" class="alerts-grid"></div>
+    </div>
+
+  </section>
+
+  <!-- ─────────────────────── TAB: FEEDBACK & SENTIMENT ───────────── -->
+  <section class="tab-content" id="tab-feedback">
+    <div class="cards-row">
+      <div class="card card-two-thirds">
+        <div class="card-header">
+          <h2>Recent Customer Reviews</h2>
+          <span class="badge badge-blue">Sentiment Analysis</span>
+        </div>
+        <div id="reviewsList" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamic reviews list -->
+        </div>
+        
+        <div style="margin-top: 24px; border-top: 1px solid var(--card-border); padding-top: 16px;">
+          <h3>Write a Review</h3>
+          <div class="pred-form" style="background: transparent; border: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            <div class="form-group">
+              <label for="reviewProduct">Product</label>
+              <select id="reviewProduct" style="width: 100%;">
+                <option value="Coffee">Coffee</option>
+                <option value="Bread">Bread</option>
+                <option value="Tea">Tea</option>
+                <option value="Cake">Cake</option>
+                <option value="Pastry">Pastry</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="reviewRating">Rating (1-5)</label>
+              <select id="reviewRating" style="width: 100%;">
+                <option value="5">5 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="2">2 Stars</option>
+                <option value="1">1 Star</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="reviewComment">Review Comments</label>
+              <input type="text" id="reviewComment" placeholder="Write your review here... Tip: use keywords like stale, burnt, delicious, fresh to trigger sentiment alerts!" style="width: 100%;" />
+            </div>
+            <div style="grid-column: span 2; display: flex; justify-content: flex-end;">
+              <button class="btn-primary" onclick="submitReview()">Submit Review</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card card-third">
+        <div class="card-header">
+          <h2>Product Quality Alerts</h2>
+          <span class="badge badge-purple">Negative Sentiment Flags</span>
+        </div>
+        <div id="sentimentAlertsList" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Dynamic sentiment quality alerts list -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
