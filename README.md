@@ -1,10 +1,5 @@
 # Smart Bakery Management System with ML
 
-![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
-![Flask](https://img.shields.io/badge/Framework-Flask--3.0-lightgrey.svg)
-![Scikit-Learn](https://img.shields.io/badge/ML-scikit--learn--1.5-orange.svg)
-![Frontend](https://img.shields.io/badge/Interface-HTML%2FCSS%2FJS-brightgreen.svg)
-
 An intelligence platform that helps bakeries predict demand, optimize inventory stock levels, minimize product wastage, analyze customer purchase patterns, and review feedback sentiment.
 
 ---
